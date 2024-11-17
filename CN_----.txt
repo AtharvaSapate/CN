@@ -1,0 +1,188 @@
+CN_----
+
+Leaky bucket
+
+#include <stdio.h>
+
+#define BUCKET_SIZE 5
+#define LEAK_RATE 1
+
+void leaky_bucket(int packets[], int n) {
+    int bucket = 0; // Current packets in the bucket
+    
+    for (int i = 0; i < n; i++) {
+        printf("\nIncoming packet size: %d\n", packets[i]);
+        
+        // Check if incoming packets can fit in the bucket
+        if (packets[i] + bucket > BUCKET_SIZE) {
+            printf("Bucket overflow! Packet of size %d is discarded.\n", packets[i]);
+        } else {
+            bucket += packets[i];
+            printf("Packet of size %d added to the bucket.\n", packets[i]);
+        }
+
+        // Leak packets at a constant rate
+        if (bucket > 0) {
+            bucket -= LEAK_RATE;
+            if (bucket < 0) bucket = 0; // Ensure bucket doesn't go negative
+            printf("Leaked 1 packet. Remaining in bucket: %d\n", bucket);
+        }
+    }
+
+    // Leak remaining packets in the bucket
+    while (bucket > 0) {
+        bucket -= LEAK_RATE;
+        if (bucket < 0) bucket = 0;
+        printf("Leaked 1 packet. Remaining in bucket: %d\n", bucket);
+    }
+}
+
+int main() {
+    int packets[] = {2, 4, 1, 3, 5, 2};
+    int n = sizeof(packets) / sizeof(packets[0]);
+    leaky_bucket(packets, n);
+    return 0;
+}
+
+------------------------------------------------------------------------------
+
+Token Bucket
+
+#include <stdio.h>
+
+#define TOKEN_RATE 2    // Tokens added per unit time
+#define BUCKET_CAPACITY 5  // Max tokens the bucket can hold
+
+void token_bucket(int packets[], int n) {
+    int tokens = 0; // Current tokens in the bucket
+
+    for (int i = 0; i < n; i++) {
+        // Add tokens to the bucket
+        tokens += TOKEN_RATE;
+        if (tokens > BUCKET_CAPACITY) {
+            tokens = BUCKET_CAPACITY; // Cap tokens at max capacity
+        }
+        
+        printf("\nIncoming packet size: %d\n", packets[i]);
+        
+        // Check if enough tokens are available to send the packet
+        if (packets[i] <= tokens) {
+            printf("Packet of size %d sent.\n", packets[i]);
+            tokens -= packets[i]; // Use up tokens
+        } else {
+            printf("Not enough tokens. Packet of size %d is delayed or dropped.\n", packets[i]);
+        }
+        
+        printf("Tokens left: %d\n", tokens);
+    }
+}
+
+int main() {
+    int packets[] = {1, 2, 3, 5, 4};
+    int n = sizeof(packets) / sizeof(packets[0]);
+    token_bucket(packets, n);
+    return 0;
+}
+
+----------------------------------------------------------------------------------------
+
+selective repeat
+
+#include <stdio.h>
+#include <stdlib.h>
+
+struct frame {
+    char ack;  // Acknowledgment status ('y' or 'n')
+    int data;  // Data in the frame
+} Frm[10];
+
+int n, lost_frame;
+
+void sender_sr();
+void recvack_sr();
+void resend_sr();
+
+int main() {
+    printf("\n--- Selective Repeat ARQ ---\n");
+    sender_sr();
+    recvack_sr();
+    resend_sr();
+    printf("\nAll frames sent successfully using Selective Repeat ARQ\n");
+    return 0;
+}
+
+void sender_sr() {
+    printf("\nEnter the number of frames to be sent: ");
+    scanf("%d", &n);
+    for (int i = 1; i <= n; i++) {
+        printf("Enter data for frame [%d]: ", i);
+        scanf("%d", &Frm[i].data);
+        Frm[i].ack = 'y'; // Mark all frames as acknowledged initially
+    }
+}
+
+void recvack_sr() {
+    lost_frame = rand() % n + 1; // Randomly select one frame to simulate loss
+    Frm[lost_frame].ack = 'n';   // Mark that frame as not acknowledged
+    printf("\nSimulating loss: Frame %d was not acknowledged", lost_frame);
+}
+
+void resend_sr() {
+    if (Frm[lost_frame].ack == 'n') {
+        printf("\nResending only Frame %d with data: %d", lost_frame, Frm[lost_frame].data);
+        Frm[lost_frame].ack = 'y'; // Mark as acknowledged after resending
+    }
+}
+
+--------------------------------------------------------------------------------
+
+Go-back-ARQ
+
+#include <stdio.h>
+#include <stdlib.h>
+
+struct frame {
+    char ack;  // Acknowledgment status ('y' or 'n')
+    int data;  // Data in the frame
+} Frm[10];
+
+int n, lost_frame;
+
+void sender_gb();
+void recvack_gb();
+void resend_gb();
+
+int main() {
+    printf("\n--- Go-Back-N ARQ ---\n");
+    sender_gb();
+    recvack_gb();
+    resend_gb();
+    printf("\nAll frames sent successfully using Go-Back-N ARQ\n");
+    return 0;
+}
+
+void sender_gb() {
+    printf("\nEnter the number of frames to be sent: ");
+    scanf("%d", &n);
+    for (int i = 1; i <= n; i++) {
+        printf("Enter data for frame [%d]: ", i);
+        scanf("%d", &Frm[i].data);
+        Frm[i].ack = 'y'; // Mark all frames as acknowledged initially
+    }
+}
+
+void recvack_gb() {
+    lost_frame = rand() % n + 1; // Randomly select one frame to simulate loss
+    Frm[lost_frame].ack = 'n';   // Mark that frame as not acknowledged
+    printf("\nSimulating loss: Frame %d was not acknowledged", lost_frame);
+}
+
+void resend_gb() {
+    printf("\nResending frames from Frame %d onwards", lost_frame);
+    for (int i = lost_frame; i <= n; i++) {
+        printf("\nResending Frame %d with data: %d", i, Frm[i].data);
+        Frm[i].ack = 'y'; // Mark as acknowledged after resending
+    }
+}
+
+------------------------------------------------------------------------------------------------
